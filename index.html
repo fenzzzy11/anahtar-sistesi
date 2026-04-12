@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gamer Fixer - Günlük Key Al</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body { background: #0f0f17; color: #00ff9d; font-family: 'Segoe UI', sans-serif; text-align: center; padding-top: 50px; }
+        .box { background: #1a1a2e; padding: 30px; border-radius: 15px; display: inline-block; border: 1px solid #00ff9d; box-shadow: 0 0 20px rgba(0,255,157,0.2); }
+        input { padding: 10px; border-radius: 5px; border: none; width: 250px; margin-bottom: 10px; }
+        button { padding: 10px 20px; background: #00ff9d; color: #0f0f17; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #result { margin-top: 20px; font-size: 20px; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>🔑 Günlük Şifre Üretici</h2>
+        <p>Programdaki Cihaz Kodunu Buraya Yaz:</p>
+        <input type="text" id="hwid" placeholder="Örn: ABC123XYZ"><br>
+        <button onclick="generateKey()">Şifre Üret</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function generateKey() {
+            const hwid = document.getElementById('hwid').value.trim();
+            if(!hwid) return alert("Lütfen kod girin!");
+            
+            // PROGRAMDAKİYLE AYNI OLMALI: Tarih + HWID + Gizli Kelime
+            const date = new Date().toISOString().slice(0, 10); 
+            const secret = "BYRM_2026_SECRET"; // Bu kelimeyi kimseye söyleme
+            const raw = hwid + date + secret;
+            const hash = CryptoJS.SHA256(raw).toString().substring(0, 8).toUpperCase();
+            
+            document.getElementById('result').innerHTML = "Günün Şifresi: <br><strong>" + hash + "</strong><br><small>Bu şifre gece 00:00'a kadar geçerlidir.</small>";
+        }
+    </script>
+</body>
+</html>
