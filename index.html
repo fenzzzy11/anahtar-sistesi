@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anahtar Sistemi — Turbo Game Fixer</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --surface: #12141f;
+      --neon: #38bdf8;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #2d3548;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(ellipse 100% 80% at 50% -10%, #0f172a, var(--bg));
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: min(520px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 0 40px rgba(56, 189, 248, 0.08);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      color: var(--neon);
+      letter-spacing: 0.02em;
+    }
+    p.sub { margin: 0 0 20px; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+    label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--neon); margin-bottom: 8px; }
+    textarea {
+      width: 100%;
+      min-height: 72px;
+      padding: 12px;
+      font-family: Consolas, monospace;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--neon);
+      background: #0b0c10;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      resize: vertical;
+    }
+    textarea:focus { outline: none; border-color: var(--neon); }
+    button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      color: #0b0c10;
+      background: linear-gradient(135deg, var(--neon), #0ea5e9);
+    }
+    button:hover { filter: brightness(1.06); }
+    .out {
+      margin-top: 20px;
+      padding: 14px;
+      font-family: Consolas, monospace;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-align: center;
+      color: var(--text);
+      background: #0b0c10;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .meta { margin-top: 12px; font-size: 0.8rem; color: var(--muted); }
+    .err { color: #f87171; margin-top: 10px; font-size: 0.85rem; display: none; }
+    code { color: var(--neon); font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Anahtar Sistemi</h1>
+    <p class="sub">
+      Uygulamadaki <strong>Cihaz Kodunuzu</strong> aynen yapıştırın. Şifre, programdaki formülle birebir üretilir.
+    </p>
+    <label for="hwid">Cihaz Kodu (HWID)</label>
+    <textarea id="hwid" placeholder="Örn: 00001A2B3C4D5E6F"></textarea>
+    <button type="button" id="btn">Şifre Üret</button>
+    <p class="err" id="err"></p>
+    <div class="out" id="out">—</div>
+    <p class="meta">
+      Yerel tarih: <span id="d"></span><br />
+      <code>SHA256(HWID + YYYY-MM-DD + BYRM_2026_MASTER_KEY)</code> → ilk 10 hex → <strong>BÜYÜK HARF</strong>
+    </p>
+    <p class="meta" style="margin-top:16px">
+      İsteğe bağlı reklam / kısa link:
+      <a href="https://link.tl/" target="_blank" rel="noopener noreferrer">link.tl</a>
+      — Kendi adresinizi bu HTML dosyasında güncelleyin.
+    </p>
+  </div>
+  <script>
+    const MASTER = "BYRM_2026_MASTER_KEY";
+
+    function todayISO() {
+      const x = new Date();
+      const y = x.getFullYear();
+      const m = String(x.getMonth() + 1).padStart(2, "0");
+      const d = String(x.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + d;
+    }
+
+    async function sha256HexUtf8(str) {
+      const buf = new TextEncoder().encode(str);
+      const hash = await crypto.subtle.digest("SHA-256", buf);
+      return Array.from(new Uint8Array(hash))
+        .map(function (b) { return b.toString(16).padStart(2, "0"); })
+        .join("");
+    }
+
+    document.getElementById("d").textContent = todayISO();
+
+    document.getElementById("btn").addEventListener("click", async function () {
+      var err = document.getElementById("err");
+      var out = document.getElementById("out");
+      err.style.display = "none";
+      var raw = document.getElementById("hwid").value.trim().toUpperCase().replace(/\s+/g, "");
+      if (!raw || !/^[0-9A-F]+$/.test(raw)) {
+        err.textContent = "Geçerli bir HWID girin (yalnızca 0-9 ve A-F, uygulamadan kopyalayın).";
+        err.style.display = "block";
+        out.textContent = "—";
+        return;
+      }
+      var payload = raw + todayISO() + MASTER;
+      try {
+        var hex = await sha256HexUtf8(payload);
+        out.textContent = hex.substring(0, 10).toUpperCase();
+      } catch (e) {
+        err.textContent = "SHA-256 çalışmadı. Sayfayı HTTPS üzerinde açın (GitHub Pages önerilir).";
+        err.style.display = "block";
+        out.textContent = "—";
+      }
+    });
+  </script>
+</body>
+</html>
