@@ -1,2 +1,0 @@
-# anahtar-sistesi
-key
